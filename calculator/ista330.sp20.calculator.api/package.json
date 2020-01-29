@@ -1,0 +1,27 @@
+{
+  "name": "ista330.sp20.calcuator.api",
+  "version": "1.0.0",
+  "description": "exercise",
+  "main": "calculator.js",
+  "scripts": {
+    "test": "1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/linhanxie/ista330.sp20.linhanxie.git"
+  },
+  "keywords": [
+    "project1"
+  ],
+  "author": "Linhan Xie",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/linhanxie/ista330.sp20.linhanxie/issues"
+  },
+  "homepage": "https://github.com/linhanxie/ista330.sp20.linhanxie#readme",
+  "devDependencies": {
+    "express": "^4.17.1",
+    "nodemon": "^2.0.2"
+  }
+}
