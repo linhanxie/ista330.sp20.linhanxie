@@ -1,9 +1,26 @@
+<!DOCTYPE html>
 <html>
 <body>
-<form action="http://localhost:3001">
-  Please enter your numeric expression:<input type="expression" name="number">
-  <input type="submit" value="calculate">
-</form>
+<script  type="text/javascript" src="calcuator.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.19.0/axios.js"></script>
+<script>
 
+    function inputEvent() {
+        let value = document.getElementById("calcid").value;
+        console.log(value);
+        axios.get("http://localhost:3001?value=" + value).then(res => {
+            const dom =  document.getElementById("result");
+            dom.innerText = res.data['txt'];
+
+
+        });
+    }
+</script>
+
+<div>
+    Please enter a numeric expression:
+    <input type="text" id="calcid" style="width: 200px" oninput="inputEvent(event)" />
+    <div id="result"></div>
+</div>
 </body>
 </html>
