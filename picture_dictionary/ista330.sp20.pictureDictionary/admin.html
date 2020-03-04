@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>admin</title>
+    <style>
+        body {
+            margin: 40px;
+            font-size: 24px;
+        }
+
+        #step2 {
+            display: none;
+            margin-top: 50px;
+        }
+
+        #step2Sel {
+            display: none;
+            margin-top: 50px;
+        }
+
+        #step3 {
+            display: none;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="step1">Step1: Select or Create a theme:
+        <input type="text" id="input" onblur="getTheme(this.value)" list="source">
+        <datalist id="source">
+        </datalist>
+    </div>
+    <div id="step2">Step2: Upload a new image :
+        <input type="file" id="getImage" onchange="upLoadImg(this.files)" accept="image/*">
+    </div>
+    <div id="step2Sel">Step2: Select an image <input onblur="showCanvas()" list="imageId">
+        <datalist id="imageId">
+        </datalist>
+        or Upload a new image :
+        <input type="file" id="getImage" onchange="upLoadImg(this.files)" accept="image/*">
+    </div>
+    <div id="step3">
+        <div>Step3: Add lables and words to the image:</div>
+        <div onclick="clickImg(event)" style="float:right;width: 500px;height:500px;">
+            <canvas id="canvaxbox" width="500" height="500"></canvas>
+        </div>
+    </div>
+</body>
+
+</html>
+
+<script>
+    var step2 = document.getElementById('step2');
+    var step3 = document.getElementById('step3');
+    var canvas = document.getElementById("canvaxbox").getContext("2d");
+    var flag = 1;
+    var step1Sel;
+    var imageId;
+    var themeId;
+    canvas.font = "14px Arial";
+    canvas.textAlign = 'center';
+    canvas.textBaseline = 'middle';
+    var img = new Image();
+    window.onload = function () {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'http://localhost:822/contents', false);
+        xhr.onreadystatechange = function () {
+            // readyState == 4说明请求已完成
+            if (xhr.readyState == 4) {
+                if (xhr.status == 200 || xhr.status == 304) {
+                    step1Sel = JSON.parse(xhr.responseText);
+                    let source = '';
+
+                    for (let i = 0; i < step1Sel.length; i++) {
+                        source += `<option  value="${step1Sel[i].name}">`
+                    }
+                    document.getElementById('source').innerHTML = source
+                } else {
+                }
+            }
+        }
+        xhr.send();
+    }
+    //失去焦点 获取上传图片
+    function getTheme(e) {
+        if (e) {
+            for (let i = 0; i < step1Sel.length; i++) {
+                if (step1Sel[i].name == e) {
+                    step2.style.display = 'none';
+                    step2Sel.style.display = 'block';
+                    imageId = step1Sel[i].imageId;
+                    themeId = step1Sel[i].id;
+                    let id = `<option  value="${imageId}">`
+                    document.getElementById('imageId').innerHTML = id
+                    return;
+                }
+            }
+            step2Sel.style.display = 'none';
+            step2.style.display = 'block';
+        }
+    }
+    function upLoadImg(e) {
+        step3.style.display = 'block';
+        var windowURL = window.URL || window.webkitURL;
+        let imgUrl;
+        if (typeof(e)!='string') {
+            imgUrl = windowURL.createObjectURL(e[0]); //获取上传的图片(本地)
+        } else {
+            imgUrl = e;
+        }
+        //开始绘制
+        img.src = imgUrl;
+        img.onload = function () {
+            canvas.drawImage(img, 0, 0, 500, 500);
+        }
+    }
+    function showCanvas() {
+        let url = `http://localhost:822/pages/${themeId}/image/${imageId}`;
+       upLoadImg(url);
+    }
+
+
+
+    function clickImg(e) {
+        /*offsetX: 5 offsetY: 9*/
+        canvas.beginPath();//标志开始一个路径
+        canvas.fillStyle = 'white';
+        canvas.arc(e.offsetX, e.offsetY, 10, 0, 2 * Math.PI);
+        canvas.fill()
+        canvas.closePath()
+        canvas.fillStyle = '#666666';
+        canvas.fillText(flag++, e.offsetX, e.offsetY);
+
+    }
+</script>

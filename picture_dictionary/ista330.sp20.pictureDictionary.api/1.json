@@ -1,0 +1,28 @@
+[
+    {
+        "id":1,
+        "objectX":20,
+        "objectY":20
+    },
+    {
+        "id":2,
+        "objectX":30,
+        "objectY":30
+    },{
+        "id":3,
+        "objectX":40,
+        "objectY":40
+    },{
+        "id":4,
+        "objectX":50,
+        "objectY":50
+    },{
+        "id":5,
+        "objectX":60,
+        "objectY":60
+    },{
+        "id":6,
+        "objectX":70,
+        "objectY":70
+    }
+]
