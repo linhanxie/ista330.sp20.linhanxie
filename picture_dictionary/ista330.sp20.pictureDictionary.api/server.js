@@ -1,116 +1,147 @@
+// dependencies
 const express = require('express');
-const fs = require('fs');
+var bodyParser = require('body-parser')
+const url = require('url');
+const fileUpload = require('express-fileupload');
+var cors = require('cors');
+const db = require('./db.js');
+
+//create the server
 const app = express();
-const cors = require('cors');
+const port = 4002;
+
+// parse application/json
+app.use(bodyParser.json());
+
+app.use(fileUpload());
 app.use(cors());
 
 
-const j = [
-    {
-        id: 0,
-        imageId: 1,
-        name: "The Supermarket",
-        url: "https://dss0.baidu.com/6ONWsjip0QIZ8tyhnq/it/u=4223197863,1458558074&fm=179&app=42&f=JPEG?w=121&h=140&s=5BA63562175673C85EEA527F0200C06F",
-    },
-    {
-        id: 1,
-        imageId: 2,
-        name: "Outdoor Clothes",
-        url: "http://img0.imgtn.bdimg.com/it/u=3386247472,87720242&fm=26&gp=0.jpg"
-    },
-    {
-        id: 2,
-        name: "Seasonal Verbs",
-        imageId: 3,
-        url: "http://img0.imgtn.bdimg.com/it/u=3386247472,87720242&fm=26&gp=0.jpg"
-    },
-    {
-        id: 3,
-        imageId: 4,
-        name: "Houses",
-        url: "http://img0.imgtn.bdimg.com/it/u=3386247472,87720242&fm=26&gp=0.jpg"
-    },
-];
+
+
+app.post('/theme', (request, response) => {
+  let date = new Date(Date.now()).toString();
+  console.log(date + " - new theme - " + request.body.theme);
+  db.saveTheme(request.body.theme)
+    .then(id => response.status(200).json(id))
+    .catch(e => response.status(500).send('The theme could not be added.'));
+
+});
+
+app.post('/image/:contentId', (request, response) => {
+  console.log(`/image/${ request.params.contentId} received.`);
+
+  let imageFile = request.files.image;
+
+  db.saveImage(request.params.contentId)
+  .then(image => {imageFile.mv('./data/' + image.name);return image;})
+  .then(image => response.json(image.id))
+  .catch(e => {
+    console.log(e);
+    response.status(500).send('The image could not be saved.');
+  });
+});
+
+app.put('/image/:imageId', (request, response) => {
+  console.log(`/image/${ request.params.imageId} received.`);
+
+  let imageFile = request.files.image;
+
+  db.getImageName(request.params.imageId)
+  .then(name => {imageFile.mv('./data/' + name);})
+  .then(() => response.status(200).json({message:'The image updated.'}))
+  .catch(e => {
+    console.log(e);
+    response.status(500).send('The image could not be saved.');
+  });
+});
+
+app.post('/label', (request, response) => {
+  let date = new Date(Date.now()).toString();
+  console.log(date + " - new word - " + request.body.name
+                                      + "-" + request.body.x
+                                      + "-" + request.body.y
+                                      + "-" + request.body.number
+                                      + "-" + request.body.imageId);
+  // TODO: save the lable into the database and return the id of the label
+    db.saveLabel(request.body.name, request.body.x, request.body.y, request.body.number, request.body.imageId).then(res => {
+      response.json(res.id);
+    }).catch(e => {
+        response.status(500).send('The word could not be saved.');
+    });
+});
+
+app.put('/label', (request, response) => {
+  let date = new Date(Date.now()).toString();
+  console.log(date + " - new word - " + request.body.name
+                                      + "-" + request.body.id
+                                      );
+  // TODO: update the label name in the databse
+    db.updateLabel(request.body.name, request.body.id).then(x => {
+        response.json(x)
+    });
+});
 
 app.get('/contents', (request, response) => {
-    let arr = [];
-    for (let i = 0; i < j.length; i++) {
-        arr.push({
-            id: j[i]['id'],
-            name: j[i]['name'],
-            imageId: j[i]['imageId']
-        });
-    }
-    console.log(arr)
-    response.send(JSON.stringify(arr));
+  let date = new Date(Date.now()).toString();
+  console.log('/contents');
+  db.getAllThemes()
+  .then(x => {
+      response.json(x)
+  })
+  .catch(e => response.status(500).send('The themes could not be retrieved.'));
+});
+
+app.get('/labels/:imageId', (request, response) => {
+  let date = new Date(Date.now()).toString();
+  let imageId = request.params.imageId;
+  console.log('/labels/' + imageId);
+  // TODO: get all the labels for the given imageId
+    const labels = db.getLabels(request.params.imageId);
+    labels.then(res => {
+        response.json(res);
+    })
 });
 
 app.get('/pages/:contentId', (request, response) => {
-    let t = "";
-    console.log(request.params)
-
-    for (let i = 0; i < j.length; i++) {
-        if (request.params['contentId'] == j[i]['id']) {
-            t = {
-                id: j[i]['imageId'],
-                name: j[i]['url'],
-            }
-        }
-    }
-    //console.log(t);
-    response.send(t === "" ? "find error" : JSON.stringify(t));
+  let contentId = Number(request.params.contentId);
+  db.getImageIds(contentId)
+  .then(x => response.json(x.map(y => y.id)))
+  .catch(e => response.status(404).send('No images were found for the content.'));
 });
+
 
 app.get('/pages/:contentId/image/:imageId', (request, response) => {
-    let { contentId, imageId } = request.params
-
-    console.log(request.params);
-
-    for (let i = 0; i < j.length; i++) {
-
-        if (contentId == j[i]['id'] && imageId == j[i]['imageId']) {
-            let stream = fs.createReadStream(j[i]['imageId'] + '.jpg');
-            let responseData = [];
-            if (stream) {
-                stream.on('data', function (chunk) {
-                    responseData.push(chunk);
-                });
-                stream.on('end', function () {
-                    let finalData = Buffer.concat(responseData);
-                    response.write(finalData);
-                    response.end();
-                });
-            }
-            return;
-        }
-    }
-    response.send("404");
-});
-
-app.get('/pages/:contentId/:imageId/:objectX/:objectY', (request, response) => {
-    let { contentId, imageId, objectX, objectY } = request.params
-    let points
-    try {
-        points = JSON.parse(fs.readFileSync(imageId + '.json', 'utf-8'))
-    } catch (error) {
-        response.send("404");
-        return;
-    }
-    for (let i = 0; i < points.length; i++) {
-        let pointX = points[i].objectX
-        let pointY = points[i].objectY
-        if (objectX < pointX + 5 && objectX > pointX - 5 && objectY < pointY + 5 && objectY > pointY - 5) {
-            response.send("ID 是" + points[i].id);
-            return;
-        }
-    }
-
-
-    response.send("404");
+  let date = new Date(Date.now()).toString();
+  console.log('pages...');
+  let contentId = Number(request.params.contentId);
+  let photoId = Number(request.params.imageId);
+  console.log(`${contentId} ${photoId}`);
+  db.getImageName(photoId)
+  .then(x => {
+    console.log('sending file ...');
+    response.sendFile(__dirname + '/data/' + x);
+  })
+  .catch(e => response.status(404).send('No image were found.'));
 
 
 });
 
-app.listen(822, () => {
-    console.log("run success");
+app.get('/words/:contentId/:imageId/:objectX/:objectY', (request, response) => {
+  let date = new Date(Date.now()).toString();
+  console.log('pages...');
+  let contentId = Number(request.params.contentId);
+  let imageId = Number(request.params.imageId);
+  let objectX = Number(request.params.objectX);
+  let objectY = Number(request.params.objectY);
+  console.log(`${contentId} ${imageId}`);
+  // TODO: get the word for the given imageId, objectX and objectY
+    db.getLabel(imageId, objectX, objectY).then(res => {
+      console.log(res);
+        response.json(res);
+    });
+
 });
+
+// start the server
+app.listen(port, () => console.log('Listening on port ' + port));

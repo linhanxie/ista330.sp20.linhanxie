@@ -1,140 +1,398 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>admin</title>
-    <style>
-        body {
-            margin: 40px;
+    <style media="screen">
+        div {
+            margin: 100px;
+        }
+
+        ul.menu {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        li.menu {
+            float: left;
+        }
+
+        li.menu a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        li.menu a:hover:not(.active) {
+            background-color: #111;
+        }
+
+        .active {
+            background-color: #4CAF50;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            padding-top: 50px;
+            left: 0;
+            top: 0;
+            width: 48%;
+            height: 30%;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            padding: 20px;
+            margin: auto;
+            width: 75%;
+            -webkit-animation-name: animatetop;
+            -webkit-animation-duration: 0.4s;
+            animation-name: animatetop;
+            animation-duration: 0.4s
+        }
+
+        .close-btn {
+            float: right;
+            color: lightgray;
             font-size: 24px;
+            font-weight: bold;
         }
 
-        #step2 {
-            display: none;
-            margin-top: 50px;
+        .close-btn:hover {
+            color: darkgray;
         }
 
-        #step2Sel {
-            display: none;
-            margin-top: 50px;
-        }
-
-        #step3 {
-            display: none;
-            margin-top: 50px;
-        }
     </style>
+    <meta charset="utf-8">
+    <title></title>
 </head>
-
 <body>
-    <div id="step1">Step1: Select or Create a theme:
-        <input type="text" id="input" onblur="getTheme(this.value)" list="source">
-        <datalist id="source">
-        </datalist>
-    </div>
-    <div id="step2">Step2: Upload a new image :
-        <input type="file" id="getImage" onchange="upLoadImg(this.files)" accept="image/*">
-    </div>
-    <div id="step2Sel">Step2: Select an image <input onblur="showCanvas()" list="imageId">
-        <datalist id="imageId">
-        </datalist>
-        or Upload a new image :
-        <input type="file" id="getImage" onchange="upLoadImg(this.files)" accept="image/*">
-    </div>
-    <div id="step3">
-        <div>Step3: Add lables and words to the image:</div>
-        <div onclick="clickImg(event)" style="float:right;width: 500px;height:500px;">
-            <canvas id="canvaxbox" width="500" height="500"></canvas>
-        </div>
-    </div>
-</body>
+<ul class="menu">
+    <li class="menu"><a class="active" href="index.html">Home</a></li>
+    <li class="menu"><a href="admin.html">Admin</a></li>
+</ul>
+<div>
+    Step 1: Select or create a theme:
+    <input type="text" id="theme"
+           style="width:300px;font-size:15px;" onfocusout="themeSelected()" name="theme" list="themes">
+    <datalist id="themes">
+    </datalist>
+</div>
+<div id="step2aConatiner" style="display:none;">
+    Step 2: Select an image:
+    <input type="text" id="imageInput"
+           style="width:300px;font-size:15px;" onfocusout="imageSelected()" name="image" list="images">
+    <datalist id="images">
+    </datalist>
+    or upload a new image: <input type="file" accept="image/*" onchange="readImage(event)">
+</div>
+<div id="step2bConatiner" style="display:none;">
+    Step 2: Upload a new image: <input type="file" accept="image/*" onchange="readImage(event)">
+</div>
 
-</html>
+<div id="step3container" style="display:none;">
+    Step 3: Add lables and words to the image:
+    <div style="float:right; ">
+        <table>
+            <tr>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <canvas id="canvas" onclick="canvasClicked(event)">
+                </td>
+            </tr>
+        </table>
+    </div>
 
-<script>
-    var step2 = document.getElementById('step2');
-    var step3 = document.getElementById('step3');
-    var canvas = document.getElementById("canvaxbox").getContext("2d");
-    var flag = 1;
-    var step1Sel;
-    var imageId;
-    var themeId;
-    canvas.font = "14px Arial";
-    canvas.textAlign = 'center';
-    canvas.textBaseline = 'middle';
-    var img = new Image();
-    window.onload = function () {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://localhost:822/contents', false);
-        xhr.onreadystatechange = function () {
-            // readyState == 4说明请求已完成
-            if (xhr.readyState == 4) {
-                if (xhr.status == 200 || xhr.status == 304) {
-                    step1Sel = JSON.parse(xhr.responseText);
-                    let source = '';
+</div>
 
-                    for (let i = 0; i < step1Sel.length; i++) {
-                        source += `<option  value="${step1Sel[i].name}">`
+<div class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <p>Enter or edit the name of the word:</p>
+        <input type="text" id="modalInput"/>
+        <button type="button" onclick="saveLabelClicked()">Save label</button>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var themes = [];
+    let themesElement = document.getElementById('themes');
+    let themeInputElement = document.getElementById('theme');
+    let imagesElement = document.getElementById('images');
+    let imageInputElement = document.getElementById('imageInput');
+    var canvas = document.getElementById('canvas');
+    var context = canvas.getContext("2d");
+    let url = 'http://localhost:4002';
+    var lastNumberOnImage = 1;
+    let themeId = -1;
+    let currentImageId = -1;
+    let clickCount = 0;
+    let labels = [];
+    let currentLabel = {};
+    let modal = document.querySelector(".modal");
+    let ModalCloseButton = document.querySelector(".close-btn");
+    let modalInput = document.getElementById("modalInput");
+    ModalCloseButton.onclick = function () {
+        modal.style.display = "none";
+    }
+    // get the current themes
+    getAndDispalyThemes();
+
+    function saveImage() {
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('image', blob);
+
+            if (currentImageId === -1) {
+                fetch(`${url}/image/${themeId}`, {method: 'POST', body: formData})
+                    .then(getJsonFromResponse)
+                    .then(x => {
+                        console.log(x);
+                        currentImageId = x;
+                    });
+
+            } else {
+                fetch(`${url}/image/${currentImageId}`, {method: 'PUT', body: formData})
+                    .then(getJsonFromResponse);
+            }
+        });
+    }
+
+    function getAndDispalyThemes() {
+        fetch(`${url}/contents`)
+            .then(response => response.json())
+            .then(contents => display(contents))
+            .catch(e => console.error(e));
+    }
+
+    function canvasClicked(event) {
+        var x = event.offsetX;
+        var y = event.offsetY;
+        clickCount++;
+        if (clickCount === 1) {
+            singleClickTimer = setTimeout(function () {
+                clickCount = 0;
+                drawCircle(x, y, lastNumberOnImage++);
+            }, 400);
+        } else if (clickCount === 2) {
+            clearTimeout(singleClickTimer);
+            clickCount = 0;
+            showAddLabelModal(x, y);
+        }
+    }
+
+    function drawCircle(x, y, number) {
+        context.beginPath();
+        context.fillStyle = 'white';
+        context.arc(x, y, 7, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = 'black';
+        context.fillText(number, x - 3, y + 3);
+        saveImage();
+        labels.push({x: x, y: y, number: number, name: '', id: -1});
+        saveLabel('post', 'undefined', x, y, number, currentImageId, -1);
+
+
+    }
+
+    function showAddLabelModal(x, y) {
+        currentLabel = labels.find(a => (Math.abs(a.x - x) < 7) && (Math.abs(a.y - y) < 7));
+
+        if (currentLabel) {
+            modalInput.value = currentLabel.name;
+            modal.style.display = "block";
+        }
+    }
+
+    function saveLabelClicked() {
+        let name = modalInput.value;
+        if (name.trim().length === 0) {
+            alert('name cannot be empty.');
+            return;
+        }
+        let method = "put";
+        if (currentLabel.id === -1) {
+            method = "post";
+        }
+        saveLabel(method, name, currentLabel.x, currentLabel.y, currentLabel.number, currentImageId, currentLabel.id)
+            .then(() => {
+                modal.style.display = "none";
+            })
+            .catch(e => {
+                console.log(e);
+                alert(e)
+            });
+        console.log(labels);
+    }
+
+    function saveLabel(method, name, x, y, number, imageId, id) {
+        console.log(method, name, x, y, number, imageId, id)
+        // TODO: 1. if the method is post: create a lebel(a word record) and update
+        // the id of this label in the labels variable. For example you can use the following code:
+        //             let i = labels.findIndex(x => x.number === number);
+        //             labels[i].id = newLabelId;
+        //      2. if the method is put: update the name(the word) of the label
+        if (method === 'post') {
+            fetch(`${url}/label`, {
+                method: "post",
+                headers: {
+                    'Content-Type': 'application/json'
+                    // 'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: JSON.stringify({method, name, x, y, number, imageId, id})
+            })
+                .then(response => {
+                    response.json().then(x => {
+                        console.log(x)
+                        let i = labels.findIndex(x => x.number === number);
+                        labels[i].id = x;
+                    })
+
+                })
+                .catch(e => console.error(e));
+        } else if (method === 'put') {
+            let i = labels.findIndex(x => x.number === number);
+            return fetch(`${url}/label`, {
+                method: "put",
+                headers: {
+                    'Content-Type': 'application/json'
+                    // 'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: JSON.stringify({id:  labels[i].id, name})
+            })
+        }
+    }
+
+
+    function readImage(event) {
+        if (event.target.files && event.target.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var image = new Image();
+                image.crossOrigin = "Anonymous";
+                image.onload = function () {
+                    context.canvas.width = image.width;
+                    context.canvas.height = image.height;
+                    context.drawImage(image, 0, 0, image.width, image.height);
+                    currentImageId = -1;
+                    labels = [];
+                    document.getElementById('step3container').style.display = 'block';
+                }
+                image.src = e.target.result;
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    }
+
+    // display the themes
+    function display(contents) {
+        themes = contents;
+        themesElement.textContent = "";
+        for (let theme of themes) {
+            let option = document.createElement('option');
+            option.setAttribute('value', theme.name);
+            themesElement.appendChild(option);
+        }
+    }
+
+    // fires when users select or create a theme
+    function themeSelected() {
+        let selectedValue = themeInputElement.value;
+        if (selectedValue.trim().length === 0) return;
+        let theme = themes.find(x => x.name === selectedValue);
+        if (theme) { // get the images that are associated with the theme
+            themeId = theme.id;
+            fetch(`${url}/pages/${theme.id}`)
+                .then(getJsonFromResponse)
+                .then(imageIds => {
+                    addImageIds(imageIds);
+                    return imageIds.length;
+                })
+                .then(x => {
+                    if (x > 0) {
+                        document.getElementById('step2aConatiner').style.display = 'block';
+                    } else {
+                        document.getElementById('step2bConatiner').style.display = 'block';
                     }
-                    document.getElementById('source').innerHTML = source
-                } else {
-                }
-            }
-        }
-        xhr.send();
-    }
-    //失去焦点 获取上传图片
-    function getTheme(e) {
-        if (e) {
-            for (let i = 0; i < step1Sel.length; i++) {
-                if (step1Sel[i].name == e) {
-                    step2.style.display = 'none';
-                    step2Sel.style.display = 'block';
-                    imageId = step1Sel[i].imageId;
-                    themeId = step1Sel[i].id;
-                    let id = `<option  value="${imageId}">`
-                    document.getElementById('imageId').innerHTML = id
-                    return;
-                }
-            }
-            step2Sel.style.display = 'none';
-            step2.style.display = 'block';
+
+                })
+                .catch(e => console.log(e));
+        } else { // add the new theme to the themes
+            fetch(`${url}/theme`, {
+                method: "post",
+                headers: {
+                    'Content-Type': 'application/json'
+                    // 'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: JSON.stringify({theme: selectedValue})
+            })
+                .then(getJsonFromResponse)
+                .then(newThemeId => themeId = newThemeId)
+                .catch(e => console.log(e));
+
+            document.getElementById('step2bConatiner').style.display = 'block';
         }
     }
-    function upLoadImg(e) {
-        step3.style.display = 'block';
-        var windowURL = window.URL || window.webkitURL;
-        let imgUrl;
-        if (typeof(e)!='string') {
-            imgUrl = windowURL.createObjectURL(e[0]); //获取上传的图片(本地)
+
+    function imageSelected() {
+        let imageId = imageInputElement.value;
+        currentImageId = imageId;
+        let themeId = themes.find(x => x.name === themeInputElement.value).id;
+        let source = `${url}/pages/${themeId}/image/${imageId}`;
+        document.getElementById('step3container').style.display = 'block';
+        var image = new Image();
+        image.crossOrigin = "Anonymous";
+        console.log(source);
+        image.addEventListener("load", function () {
+            context.canvas.width = image.width;
+            context.canvas.height = image.height;
+            context.drawImage(image, 0, 0, image.width, image.height);
+            console.log("....")
+            getLabels();
+        });
+        image.src = source;
+    }
+
+    function getLabels() {
+        fetch(`${url}/labels/${currentImageId}`)
+            .then(getJsonFromResponse)
+            .then(x => {
+                labels = x;
+                lastNumberOnImage = x.reduce((previous, current) => (previous.number > current.number) ? previous : current, {number: 1}).number;
+                lastNumberOnImage++;
+                console.log(lastNumberOnImage);
+            })
+            .catch(e => console.log(e));
+    }
+
+    function addImageIds(imageIds) {
+        imagesElement.textContent = '';
+        for (let imageId of imageIds) {
+            let option = document.createElement('option');
+            option.setAttribute('value', imageId);
+            imagesElement.appendChild(option);
+        }
+    }
+
+    function getJsonFromResponse(response) {
+        if (response.status === 200) {
+            return response.json();
         } else {
-            imgUrl = e;
-        }
-        //开始绘制
-        img.src = imgUrl;
-        img.onload = function () {
-            canvas.drawImage(img, 0, 0, 500, 500);
+            throw Error(response.status);
         }
     }
-    function showCanvas() {
-        let url = `http://localhost:822/pages/${themeId}/image/${imageId}`;
-       upLoadImg(url);
-    }
 
 
-
-    function clickImg(e) {
-        /*offsetX: 5 offsetY: 9*/
-        canvas.beginPath();//标志开始一个路径
-        canvas.fillStyle = 'white';
-        canvas.arc(e.offsetX, e.offsetY, 10, 0, 2 * Math.PI);
-        canvas.fill()
-        canvas.closePath()
-        canvas.fillStyle = '#666666';
-        canvas.fillText(flag++, e.offsetX, e.offsetY);
-
-    }
 </script>
+</body>
+</html>

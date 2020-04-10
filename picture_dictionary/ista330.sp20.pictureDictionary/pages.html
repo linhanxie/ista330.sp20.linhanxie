@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style media="screen">
+          ul.menu {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #333;
+      }
+
+      li.menu {
+      float: left;
+      }
+
+      li.menu a {
+      display: block;
+      color: white;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      }
+
+      li.menu a:hover:not(.active) {
+      background-color: #111;
+      }
+
+      .active {
+      background-color: #4CAF50;
+      }
+    </style>
+  </head>
+  <body>
+    <ul class="menu">
+      <li class="menu"><a class="active" href="index.html">Home</a></li>
+      <li class="menu"><a href="admin.html">Admin</a></li>
+   </ul>
+  <h2 id='sectionTitle'></h2>
+  <div id='imagesSection' style='float:left;width:70%'>
+    <img id='imageHolder' onclick="imageClicked(event)">
+  </div>
+  <div  style='float:left;width:30%'>
+     <ul id="wordsList"> </ul>
+  </div>
+
+  <script type="text/javascript">
+    console.log(location.search);
+    const parameters = new Map(decodeURIComponent(location.search).slice(1).split('&').map(kv => kv.split('=')))
+    console.log(parameters);
+    document.title = parameters.get('name');
+    document.getElementById('sectionTitle').innerHTML = parameters.get('name');
+    let contentId = parameters.get('id');
+    let photoId = 1;
+    let baseUrl = 'http://localhost:4002';
+    fetch(`${baseUrl}/pages/${contentId}`)
+    .then(response => {
+      if(response.ok)
+        return response.json();
+      else return Error(response.status);
+    })
+    .then(ids => addImageTags(ids))
+    .catch(error => console.error(error));
+
+    function addImageTags(ids) {
+
+      let imagesSection = document.getElementById('imagesSection');
+      for(let id of ids) {
+        let imageUrl = `${baseUrl}/pages/${contentId}/image/${id}`;
+        let image = document.createElement('img');
+        image.setAttribute('src', imageUrl);
+        image.setAttribute('onclick', `imageClicked(event, ${id})`);
+        imagesSection.appendChild(image);
+      }
+    }
+
+
+
+
+    let ul = document.getElementById('wordsList');
+    function imageClicked(event, imageId) {
+      //alert(`${event.offsetX} - ${event.offsetY}`);
+      fetch(`${baseUrl}/words/${contentId}/${imageId}/${event.offsetX}/${event.offsetY}`)
+      .then(response => {
+        if(response.ok)
+          return response.json();
+        else return Error(response.status);
+      })
+      .then(word => {
+        let li = document.createElement('li');
+        let t = document.createTextNode(`${word.number} - ${word.name}`);
+        li.appendChild(t);
+        ul.appendChild(li);
+      })
+      .catch(error => console.error(error));
+
+    }
+
+
+  </script>
+  </body>
+</html>

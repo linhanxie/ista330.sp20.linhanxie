@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Picture Dictionary</title>
+    <style media="screen">
+          ul.menu {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #333;
+      }
+
+      li.menu {
+      float: left;
+      }
+
+      li.menu a {
+      display: block;
+      color: white;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      }
+
+      li.menu a:hover:not(.active) {
+      background-color: #111;
+      }
+
+      .active {
+      background-color: #4CAF50;
+      }
+    </style>
+  </head>
+  <body>
+
+    <ul class="menu">
+      <li class="menu"><a class="active" href="index.html">Home</a></li>
+      <li class="menu"><a href="admin.html">Admin</a></li>
+
+   </ul>
+
+    <div id='contents'>
+      <h2> A thematical picture dictionary </h2>
+    </div>
+    <footer>
+      <p style="font-size:15px">All the photos in this
+        presentation are taken from Oxford Picture Dictionary.</p>
+    </footer>
+  <script type="text/javascript">
+    let url = 'http://localhost:4002/contents';
+    fetch(url)
+    .then(response => {
+      if(response.ok === true) {
+        return response.json();
+      } else {
+        throw Error(`There was an error in the communication with the server: ${response.statusText}`);
+      }
+      })
+    .then(contents => display(contents))
+    .catch(e => {console.log(e);alert(e);});
+
+    function display(contents) {
+      let ol =  document.createElement("ol");
+      for(let item of contents) {
+        let li = document.createElement('li');
+        let a = document.createElement('A');
+        let t = document.createTextNode(item.name);
+        a.setAttribute('href', `pages.html?id=${item.id}&name=${item.name}`);
+        a.appendChild(t);
+        li.appendChild(a);
+        ol.appendChild(li);
+      }
+      let contentsElement = document.getElementById('contents');
+      contentsElement.appendChild(ol);
+    }
+  </script>
+  </body>
+</html>
