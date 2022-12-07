@@ -21,6 +21,6 @@
   },
   "homepage": "https://github.com/linhanxie/ista330.sp20.linhanxie#readme",
   "devDependencies": {
-    "express": "^4.17.1"
+    "express": "^4.18.2"
   }
 }
